@@ -159,8 +159,39 @@ cat(head(unname(taxa.plus)),file=paste(pathQC, "QC_run_pipeline.txt"),append=TRU
 save.image(file=paste0(pathQC, 'myEnvironment-20201123.RData'))
 ```
 
+```{r}
+samdf <- read.table(paste0(path, "metadata/metadata_F245.csv"), header=T, row.names=1, check.names=F, sep=";")
+# Join metadata, sequence table ad taxa intoa phyloseq object
+ps <- phyloseq(otu_table(seqtab.nochim, taxa_are_rows=FALSE), 
+               sample_data(samdf), 
+               tax_table(taxa))
 
+# Get table of sequences and their lengths
+dna <- Biostrings::DNAStringSet(taxa_names(ps))
+# For now the names are the sequence again
+names(dna) <- taxa_names(ps)
+# Include reference sequences in phyloseq
+ps <- merge_phyloseq(ps, dna)
+# We dont have names, so we count for each taxa (named ASV[num])
+# the number of times it shows up in each one of our samples
+taxa_names(ps) <- paste0("ASV", seq(ntaxa(ps)))
+```
 
+```{r, alpha, verbose = FALSE, warning = FALSE}
+# Alpha diversity
+
+p = plot_richness(ps, color = "Diet", measures=c("Shannon", "Simpson"), x = "Age") + theme(legend.title = element_blank())
+
+print(p)
+
+## New stuff
+write.table(estimate_richness(ps), paste0(path, "analysis/alpha_values.csv"), sep = ";", quote = F)
+```
+```{r}
+ps.prop <- transform_sample_counts(ps, function(otu) otu/sum(otu))
+ord.nmds.bray <- ordinate(ps.prop, method = "NMDS", distance = "bray")
+plot_ordination(ps.prop, ord.nmds.bray, color = "Diet", shape = as.factor(sample_data(ps.prop)$Age))
+```
 
 
 

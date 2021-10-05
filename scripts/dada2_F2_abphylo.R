@@ -97,6 +97,8 @@ is.rooted(phy_tree(ps))
 
 saveRDS(ps, paste0(path, "analysis/seqtab_merge3/phyloseq_obj_", new_day, ".rds"))
 
+ps <- readRDS(paste0(path, "analysis/seqtab_merge3/phyloseq_obj_20210625.rds"))
+
 #################
 ### Alpha diversity
 #################
@@ -136,6 +138,19 @@ dev.off()
 wuf_ord <- ordinate(ps, method="PCoA", distance = wuf_distance)
 pdf(paste0(path,"analysis/plots/alpha_beta_diversity/unifraq_weighted_PCoA_TreatColor_", new_day, ".pdf"))
 plot_ordination(ps, wuf_ord, color="Treatment") + theme(aspect.ratio=1) +  scale_color_manual(values = c("magenta", "darkgreen", "gold", "dodgerblue", "red"))
+dev.off()
+
+### Extra for Friday seminar presentation ###
+comp = subset_samples(ps, Treatment != "AL_DR20M")
+comp = subset_samples(comp, Treatment != "AL_DR12M")
+comp = subset_samples(comp, Treatment != "AL_DR16M")
+comp = subset_samples(comp, Months == 24)
+wuf_distance_small <- phyloseq::distance(comp, "uUniFrac")
+wuf_ord <- ordinate(ps, method="PCoA", distance = wuf_distance_small)
+pdf(paste0(path,"analysis/plots/alpha_beta_diversity/24M_ALDRSuunifraq_unweighted_PCoA_TreatColor_", new_day, ".pdf"), width = 4, height = 2.5)
+plot_ordination(ps, wuf_ord, color="Treatment") + theme(aspect.ratio=1, axis.text=element_text(size=32), axis.title=element_text(size=32), 
+              plot.title = element_text(size=32)) + geom_point(size = 3.5) +  scale_color_manual(
+              values = c("dodgerblue", "red")) + stat_ellipse() + theme_classic()
 dev.off()
 
 #################

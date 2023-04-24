@@ -1,0 +1,146 @@
+---
+title: "microbiome_Bcellpaper"
+output: pdf_document
+date: "2023-04-24"
+---
+
+```{r setup, include=FALSE}
+suppressPackageStartupMessages(library(ggplot2))
+suppressPackageStartupMessages(library(lme4))
+suppressPackageStartupMessages(library(nlme))
+suppressPackageStartupMessages(library(dplyr))
+#suppressPackageStartupMessages(library(lsmeans))
+suppressPackageStartupMessages(library(dada2))
+suppressPackageStartupMessages(library(phyloseq))
+suppressPackageStartupMessages(library(vegan))
+suppressPackageStartupMessages(library(pairwiseAdonis))
+suppressPackageStartupMessages(library(argparser))
+
+path <- "../analysis/intermediate_April2023/"
+project_path <- "~/workspace/MPI/16S_final/F1_longitudinal/"
+
+ps <- readRDS("~/workspace/MPI/16S_final/F1_longitudinal/analysis/seqtab_merge3/phyloseq_obj_20210215.rds")
+```
+
+```{r}
+## Subset mice in the ages
+comp = subset_samples(ps, Months %in% c(16, 20, 24 ))
+## Subset mice in the diets
+comp = subset_samples(comp, Treatment %in% c("AL_lifelong", "DR_lifelong", "AL_DR16M"))
+```
+
+```{r}
+# We are going to do the subsets outside and then subset the phyloseq
+df <- as.data.frame(comp@sam_data)
+al16 <- subset(df, subset=(df$Months==16 & df$Treatment == "AL_lifelong"))
+dr16 <- subset(df, subset=(df$Months==16 & df$Treatment == "DR_lifelong"))
+al20 <- subset(df, subset=(df$Months==20 & df$Treatment == "AL_lifelong"))
+dr20 <- subset(df, subset=(df$Months==20 & df$Treatment == "DR_lifelong"))
+aldr1620 <- subset(df, subset=(df$Months==20 & df$Treatment == "AL_DR16M"))
+al24 <- subset(df, subset=(df$Months==24 & df$Treatment == "AL_lifelong"))
+dr24 <- subset(df, subset=(df$Months==24 & df$Treatment == "DR_lifelong"))
+aldr1624 <- subset(df, subset=(df$Months==24 & df$Treatment == "AL_DR16M"))
+
+## Subset 10 mice from each
+al16 <- al16[sample(nrow(al16), 8), ]
+dr16 <- dr16[sample(nrow(dr16), 8), ]
+al20 <- al20[sample(nrow(al20), 8), ]
+dr20 <- dr20[sample(nrow(dr20), 8), ]
+aldr1620 <- aldr1620[sample(nrow(aldr1620), 8), ]
+al24 <- al24[sample(nrow(al24), 8), ]
+dr24 <- dr24[sample(nrow(dr24), 8), ]
+aldr1624 <- aldr1624[sample(nrow(aldr1624), 8), ]
+
+# Put them together
+dfsub <- rbind(al16,dr16, al20, dr20, aldr1620, al24, dr24, aldr1624)
+```
+
+```{r}
+## Subset the phyloseq
+pssub <- phyloseq::prune_samples(rownames(dfsub), ps)
+```
+
+```{r}
+## Calculate alpha
+new_day <- gsub("-", "", as.character(Sys.Date()))
+write.table(estimate_richness(pssub, measures = c("Observed", "Shannon", "Simpson")), paste0("~/workspace/MPI/16S_final/F1_longitudinal/analysis/intermediate_April2023/alpha_values_", new_day, ".csv"), sep = ";", quote = F)
+```
+```{r}
+comp = subset_samples(pssub, Months == 16)
+wuf_distance_small <- phyloseq::distance(comp, "uUniFrac")
+wuf_ord <- ordinate(ps, method="PCoA", distance = wuf_distance_small)
+pdf(paste0("~/workspace/MPI/16S_final/F1_longitudinal/analysis/intermediate_April2023/16M_ALDRSuunifraq_unweighted_PCoA_TreatColor_", new_day, ".pdf"), width = 4, height = 2.5)
+plot_ordination(ps, wuf_ord, color="Treatment") + theme(aspect.ratio=1, axis.text=element_text(size=32), axis.title=element_text(size=32), 
+              plot.title = element_text(size=32)) + geom_point(size = 2.5) + scale_alpha_manual(values = c(0, 0, 1, 1)) +  scale_color_manual(
+              values = c("dodgerblue", "red")) + stat_ellipse() + theme_classic() 
+              
+dev.off()
+
+# Pairwise adonis of this:
+print(pairwise.adonis(wuf_distance_small, sample_data(comp)$Treatment, p.adjust.m = "bonferroni"))
+```
+```{r}
+comp = subset_samples(pssub, Months == 20)
+wuf_distance_small <- phyloseq::distance(comp, "uUniFrac")
+wuf_ord <- ordinate(ps, method="PCoA", distance = wuf_distance_small)
+pdf(paste0("~/workspace/MPI/16S_final/F1_longitudinal/analysis/intermediate_April2023/20M_ALDRswuunifraq_unweighted_PCoA_TreatColor_", new_day, ".pdf"), width = 4, height = 2.5)
+plot_ordination(ps, wuf_ord, color="Treatment") + theme(aspect.ratio=1, axis.text=element_text(size=32), axis.title=element_text(size=32), 
+              plot.title = element_text(size=32)) + geom_point(size = 2.5) + scale_alpha_manual(values = c(0, 0, 1, 1)) +  scale_color_manual(
+              values = c("green", "dodgerblue", "red")) + stat_ellipse() + theme_classic() 
+              
+dev.off()
+
+# Pairwise adonis of this:
+print(pairwise.adonis(wuf_distance_small, sample_data(comp)$Treatment, p.adjust.m = "bonferroni"))
+```
+```{r}
+comp = subset_samples(pssub, Months == 24)
+wuf_distance_small <- phyloseq::distance(comp, "uUniFrac")
+wuf_ord <- ordinate(ps, method="PCoA", distance = wuf_distance_small)
+pdf(paste0("~/workspace/MPI/16S_final/F1_longitudinal/analysis/intermediate_April2023/24M_ALDRswuunifraq_unweighted_PCoA_TreatColor_", new_day, ".pdf"), width = 4, height = 2.5)
+plot_ordination(ps, wuf_ord, color="Treatment") + theme(aspect.ratio=1, axis.text=element_text(size=32), axis.title=element_text(size=32), 
+              plot.title = element_text(size=32)) + geom_point(size = 2.5) + scale_alpha_manual(values = c(0, 0, 1, 1)) +  scale_color_manual(
+              values = c("green", "dodgerblue", "red")) + stat_ellipse() + theme_classic() 
+              
+dev.off()
+
+# Pairwise adonis of this:
+print(pairwise.adonis(wuf_distance_small, sample_data(comp)$Treatment, p.adjust.m = "bonferroni"))
+```
+
+```{r}
+## Testing the alpha
+sha <- estimate_richness(pssub, measures = c("Shannon"))
+# Put in a dataframe with the metadata
+shadf <- merge(dfsub, sha, by = 'row.names', all = TRUE)
+```
+
+```{r}
+# Subset each comparison we want to do
+a <- subset(shadf, Months == 16)
+a$Treatment <- as.factor(a$Treatment)
+b <- subset(shadf, Months == 20)
+b$Treatment <- as.factor(b$Treatment)
+c <- subset(shadf, Months == 24)
+c$Treatment <- as.factor(c$Treatment)
+
+# Now do wilcoxon
+kruskal.test(Shannon ~ Treatment, data = a)
+
+pairwise.wilcox.test(a$Shannon, a$Treatment,
+                 p.adjust.method = "none")
+```
+```{r}
+kruskal.test(Shannon ~ Treatment, data = b)
+pairwise.wilcox.test(b$Shannon, b$Treatment,
+                 p.adjust.method = "none")
+```
+```{r}
+kruskal.test(Shannon ~ Treatment, data = c)
+pairwise.wilcox.test(c$Shannon, c$Treatment,
+                 p.adjust.method = "none")
+```
+```{r}
+
+```
+

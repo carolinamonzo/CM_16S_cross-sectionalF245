@@ -4,9 +4,9 @@ library(phyloseq); packageVersion("phyloseq")
 library(Biostrings); packageVersion("Biostrings")
 library(ggplot2); packageVersion("ggplot2")
 library(phangorn); packageVersion("phangorn")
-library(DECIPHER); packageVersion("DECIPHER")
+#library(DECIPHER); packageVersion("DECIPHER")
 library(vegan); packageVersion("vegan")
-library(DESeq2); packageVersion("DESeq2")
+#library(DESeq2); packageVersion("DESeq2")
 library(tidyr); packageVersion("tidyr")
 library(svglite)
 library(pairwiseAdonis)
@@ -97,7 +97,7 @@ is.rooted(phy_tree(ps))
 
 saveRDS(ps, paste0(path, "analysis/seqtab_merge3/phyloseq_obj_", new_day, ".rds"))
 
-ps <- readRDS(paste0(path, "analysis/seqtab_merge3/phyloseq_obj_20210625.rds"))
+ps <- readRDS("~/workspace/MPI/16S_final/CM_16S_cross-sectionalF245/analysis/seqtab_merge3/phyloseq_obj_20210625.rds")
 
 #################
 ### Alpha diversity
@@ -157,6 +157,18 @@ plot_ordination(ps, wuf_ord, color="Treatment") + theme(aspect.ratio=1, axis.tex
 dev.off()
 
 # Pairwise adonis of this:
+print(pairwise.adonis(wuf_distance_small, sample_data(comp)$Treatment, p.adjust.m = "BH"))
+
+## Running stats for paper
+
+comp = subset_samples(ps, Months == 24)
+#comp = subset_samples(comp, Treatment != "AL_DR16M")
+comp = subset_samples(comp, Treatment != "AL_DR20M")
+#comp = subset_samples(comp, Treatment != "AL_lifelong")
+#comp = subset_samples(comp, Treatment != "DR_lifelong")
+#comp = subset_samples(comp, Months == 24)
+wuf_distance_small <- phyloseq::distance(comp, "uUniFrac")
+
 print(pairwise.adonis(wuf_distance_small, sample_data(comp)$Treatment, p.adjust.m = "BH"))
 
 #################
